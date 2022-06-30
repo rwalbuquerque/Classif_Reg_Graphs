@@ -1,0 +1,58 @@
+#Contar pixels de determinado valor:
+cob <- raster(“arquivoTif.tif”)
+freq(cob)
+
+
+#Inserir colunas e linhas num raster já importado no R:
+library(spatial.tools)
+r <- raster("Mosaico_RGB.tif", band=1)
+g <- raster("Mosaico_AOI_Dividida1.tif", band=2)
+b <- raster("Mosaico_AOI_Dividida1.tif", band=3)
+msc <- stack(r, g, b)
+d <- modify_raster_margins(msc, extent_delta = c(0, 11, 0, 18), value = NA) # neste caso foram adicionadas 11 colunas e 18 linhas. Importante reparar que desta forma no QGIS a visualização dos valores espectrais aparece diferente, mas quantitativamente os valores espectrais são mantidos!!!!
+writeRaster(d, "C:/Projetos/Vant_Apui/Phantom3/Capoeira_2anos/DTM/Teste_Tiles_Voronoi/Mosaic_Tile1_esticado.tif", datatype='INT1U')
+
+#Organizar Dataframe em ordem crescente:
+loc<-loc[order(loc$x),]#, em que “x” é o nome de uma das colunas de “loc”
+
+#Passar valores 0 para NA:
+NAvalue(chm) <- 0
+
+#Igualar as resoluções X e Y de um raster:
+res(chm) <- c(xres(chm), xres(chm))
+
+#Checar CRS das variáveis e depois mudar:
+crs(chm)
+projection(apui)<-NA
+
+#Degradar pixels:
+library(raster)
+library(sp)
+library(rgdal)
+chm <- raster("NomeDoArquivo.tif")
+s <- raster(nrow = (nrow(chm)/4), ncol = (ncol(chm)/4)) ## se quiser degradar direto para 16x,  fazer s <- raster(nrow = (nrow(chm)/16), ncol = (ncol(chm)/16)) ##
+extent(s) <- extent(chm)
+d <- resample(chm, s, method = 'bilinear')
+res(d) ## checar se a resolução de d é menor que a de chm ##
+writeRaster(d,filename="nomeArquivoDegradado.tif",format="GTiff",datatype="INT1U",overwrite=TRUE)
+freq(d) ## checar a quantidade de pixels com valor Zero e valor Um caso queira calcular a área coberta por vegetação ##
+
+#Alternativamente:
+chm_aggregate <- aggregate(chm, fact=16) ## fact=16 é degradar 16 vezes ##
+
+#OBS: para degradar o RGB, é necessário degradar as bandas R, G e B e depois fazer um stack das bandas degradadas, executando o comando writeRaster com este stack. Atentar-se para o CRS do RGB degradado, que deve ser o mesmo do arquivo que o originou para possibilitar visualização no QGis. ##
+
+#OBS2: para degradar o MPRI variando de 0 a 1, é necessário degradar a banda R e depois a banda G e calcular o MPRI a partir dessas duas bandas degradadas##
+
+
+
+#Filtro de desvio padrão da declividade
+
+library(raster)
+library(sp)
+library(rgdal)
+library(spatialEco)
+setwd(“caminhoPasta”)
+mds <- raster("MDS_AOI_Dividida1.tif")
+r_sd <- spherical.sd(mds, d=9) # d=9 significa Kernel=9 ou fws=9 ##
+writeRaster(r_sd,filename="DesvPad_Mds_fws9.tif",format="GTiff",datatype="INT1U",overwrite=TRUE)
