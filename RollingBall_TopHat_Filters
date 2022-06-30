@@ -1,0 +1,36 @@
+library(raster)
+library(sp)
+library(imager)
+library(baseline)
+setwd("pathToDirHere")
+r <- raster("MosaicoRGB_Drone.tif", band=1)
+g <- raster("MosaicoRGB_Drone.tif", band=2)
+b <- raster("MosaicoRGB_Drone.tif", band=3)
+img=brick(r, g, b)
+dimX=dim(img)[2]
+dimY=dim(img)[1]
+im=as.cimg(rep(1:(dimX*dimY),3),x=dimX,y=dimY,cc=3)
+im[1:dimX,1:dimY,1]=getValues(img[[1]])/255
+im[1:dimX,1:dimY,2]=getValues(img[[2]])/255
+im[1:dimX,1:dimY,3]=getValues(img[[3]])/255
+imgr=grayscale(im)
+r1=img[[1]] ## then to have the gray scale image in raster (passo 1 de 2) ##
+r1=setValues(r1,c(imgr)) ## then to have the gray scale image in raster (passo 2 de 2) ##
+## to run the rolling ball on x or on y on this gray image ##
+wm=50; ws =50 ## valores muito grande comparados com o tamanho da imagem dão erro ##
+x=matrix(getValues(r1),nrow=dim(r1)[2])
+y=matrix(getValues(r1),nrow=dim(r1)[1],byrow=T)
+system.time({tmpx= baseline(x, wm=wm, ws=ws, method='rollingBall')}) ## checar resultados e calibrar os parâmetros wm e ws ##
+system.time({tmpy= baseline(y, wm=wm, ws=ws, method='rollingBall')}) ## checar resultados e calibrar os parâmetros wm e ws ##
+im2grx=as.cimg(tmpx@corrected)
+im2gry=as.cimg(t(tmpy@corrected))
+## para rodar os filtros Top Hat Transform ##
+mop <- mopening_square(im, 12) ## processo de erosão seguido de processo de dilatação. 12 é o tamanho a ser regulado do kernel quadrado ##
+mcl <- mclosing_square(im, 12) ## processo de dilatação seguido de processo de erosão. 12 é o tamanho a ser regulado do kernel quadrado ##
+tth <- im - mop ## transformação Top Hat ##
+tbh <- mcl - im ## transformação Bottom Hat ##
+ftbh <- im + tth - tbh ## aplicação do filtro Transformação Top Bottom Hat ##
+rex=img
+rex1=setValues(rex,c(mcl)) ## Ver qual arquivo deseja exportar em raster, no caso do exemplo, o mcl. ATENÇÃO! Verificar a extensão de valores do arquivo desejado, que no caso do mcl vai de 0 a 1 ##
+teste <- rex1*255
+writeRaster(teste,filename="nomeDoArquivo.tif",format="GTiff",datatype="INT1U",overwrite=TRUE)
