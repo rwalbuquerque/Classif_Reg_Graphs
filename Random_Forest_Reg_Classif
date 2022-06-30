@@ -1,0 +1,106 @@
+# Random Forest Regression:
+
+library(rsample)      # data splitting 
+library(randomForest) # basic implementation
+library(ranger)       # a faster implementation of randomForest
+library(caret)        # an aggregator package for performing many machine learning models
+library(h2o)          # an extremely fast java-based platform
+library(dplyr)        # to read the command %>%
+trees <- read.csv("C:/Projetos/Vant_Rondonia_Embrapa/Results_Cecropia_Vismia/Heterogeneidade_Copas2.csv", header = TRUE, sep = ";") ## Import dataset into R according to the file’s specifications ##
+trees_split <- initial_split(trees, prop = .7) ## Split train and test with 70% of the data as training ##
+trees_train <- training(trees_split) ## create train dataset ##
+trees_test  <- testing(trees_split) ## create test dataset ##
+set.seed(123) ## make the example reproducible ##
+m1 <- randomForest(formula = Classif ~ ., data = trees_train) ## perform Random Forest regression. “Classif” is the column containing the classification value, but this column name varies from data to data. ##
+m1 ## check Random Forest regression results ##
+which.min(m1$mse) ## number of trees with lowest MSE. Works only when target is a NUMBER instead of a CLASS NAME ##
+sqrt(m1$mse[which.min(m1$mse)]) ## RMSE of this optimal random forest. Works only when target is a NUMBER instead of a CLASS NAME ##
+trees_test_v2 <- trees_test[setdiff(names(trees_test), "Classif")] ## Get target value column (“Classif” in this example) off to predict on test dataset ##
+predictions <- m1 %>% predict(trees_test_v2) ## Predict using the Random Forest model (m1) on test dataset. ##
+confusionMatrix(trees_test$Classif, unname(predictions)) ## Check Confusion Matrix. “predictions” is an atomic vector, which has many variables, so unname() extracts only the classification result variable. Works whn target is a class. ##
+precision <- posPredValue(unname(predictions), trees_test$Classif, positive="good")
+recall <- sensitivity(unname(predictions), trees_test$Classif, positive="good")
+F1 <- (2 * precision * recall) / (precision + recall) ## Calculate F_score ##
+## Other way of calculating Precision in atomic vector: precision <- m1$confusion[-7][4]/(m1$confusion[-7][4]+m1$confusion[-7][3]) ## Calculate Precision in two classes problem considering class 2 as positive. If considering class 1 as positive, use the following code: precision <- m1$confusion[-7][1]/(m1$confusion[-7][1]+m1$confusion[-7][2]) PS: Precision considering training data. ##
+## Other way of calculating Recall in atomic vector: recall <- m1$confusion[-7][4]/(m1$confusion[-7][4]+m1$confusion[-7][2]) ## Calculate Recall in two classes problem considering class 2 as positive. If considering class 1 as positive, use the following code: precision <- m1$confusion[-7][1]/(m1$confusion[-7][1]+m1$confusion[-7][3]) PS: Recall considering training data. ##
+## If you want to use cross validation k-fold  method:
+set.seed(123) ## make the example reproducible ##
+trControl <- trainControl(method = "cv", number = 10, search = "grid") ## Define k-fold train control parameters, which is 10 in this example ##
+cv_rf <- train(Classif ~ ., data = trees_train, method = "rf", metric = "Accuracy", trControl = trControl) ## Create Random Forest “rf” model with trControl parameters ##
+predictions <- cv_rf %>% predict(trees_test_v2)  ## Predict using the Random Forest model (cv_rf) on test dataset. ##
+confusionMatrix(trees_test$Classif, unname(predictions)) ## Check Confusion Matrix. “predictions” is an atomic vector, which has many variables, so unname() extracts only the classification result variable. ##
+precision <- posPredValue(unname(predictions), trees_test$Classif, positive="good")
+recall <- sensitivity(unname(predictions), trees_test$Classif, positive="good")
+F1 <- (2 * precision * recall) / (precision + recall) ## Calculate F_score ##
+## If you want to use validation dataset in training dataset as Out Of Bag (OOB) method:
+set.seed(123) ## make the example reproducible ##
+valid_split <- initial_split(trees_train, .8) ## create training and validation data ##
+trees_train_v2 <- analysis(valid_split) ## training data ##
+trees_valid <- assessment(valid_split) ## validation data ##
+x_test <- trees_valid[setdiff(names(trees_valid), "Classif")] ## validation data ##
+y_test <- trees_valid$Classif ## validation data ##
+rf_oob_comp <- randomForest(formula = Classif ~ ., data = trees_train_v2, xtest = x_test, ytest = y_test, keep.forest=TRUE) ## perform Random Forest regression ##
+oob <- sqrt(rf_oob_comp$mse) ## extract OOB errors. Works only when target is a NUMBER instead of a CLASS NAME ##
+validation <- sqrt(rf_oob_comp$test$mse) ## extract validation errors ##
+predictions <- rf_oob_comp %>% predict(trees_test_v2) ## Predict using the Random Forest model (m1) on test dataset. ##
+confusionMatrix(trees_test$Classif, unname(predictions)) ## Check Confusion Matrix. “predictions” is an atomic vector, which has many variables, so unname() extracts only the classification result variable. ##
+precision <- posPredValue(unname(predictions), trees_test$Classif, positive="good")
+recall <- sensitivity(unname(predictions), trees_test$Classif, positive="good")
+F1 <- (2 * precision * recall) / (precision + recall) ## Calculate F_score ##
+tibble::tibble(`Out of Bag (Test) Error` = oob, `Validation error` = validation, ntrees = 1:rf_oob_comp$ntree) %>% gather(Metric, RMSE, -ntrees) %>% ggplot(aes(ntrees, RMSE, color = Metric)) + geom_line() + xlab("Number of trees") # plot OOB and validation errors. Works only when target is a NUMBER instead of a CLASS NAME ##
+rf_oob_comp ## check Random Forest OOB regression results ##
+## If you wanna develop a model only with important variables and check which variables are considered important ##
+hyper_grid <- expand.grid(mtry = seq(1, 16, by = 2), node_size = seq(3, 9, by = 2), sampe_size = c(.55, .632, .70, .80), OOB_RMSE = 0) ## create a grid with the possibilities of models considering mtry (number of variables), size of the nodes of the Random Forest trees and the proportion of training data ##
+for(i in 1:nrow(hyper_grid)) {
++     model <- ranger(
++         formula         = Classif ~ ., 
++         data            = trees_train, 
++         num.trees       = 500,
++         mtry            = hyper_grid$mtry[i],
++         min.node.size   = hyper_grid$node_size[i],
++         sample.fraction = hyper_grid$sampe_size[i],
++         seed            = 123
++     )
++     hyper_grid$OOB_RMSE[i] <- sqrt(model$prediction.error)
++ } ## Classif is the column with the y value (value being estimated) ##
+hyper_grid %>% dplyr::arrange(OOB_RMSE) %>% head(10) ## Check the top 10 generated models ##
+OOB_RMSE <- vector(mode = "numeric", length = 100) ## Prepare the data for the next step ##
+for(i in seq_along(OOB_RMSE)) {
++     optimal_ranger <- ranger(
++         formula         = Classif ~ ., 
++         data            = trees_train, 
++         num.trees       = 500,
++         mtry            = 15,
++         min.node.size   = 3,
++         sample.fraction = .8,
++         importance      = 'impurity'
++     )
++     OOB_RMSE[i] <- sqrt(optimal_ranger$prediction.error)
++ } ## Create a model with the attributes (mtry, min.node.size, sample.fraction) of the best model in the top 10 list to get a better expectation of the error rate. ##
+hist(OOB_RMSE, breaks = 20) ## Histogram showing the range of the errors in the best model ##
+optimal_ranger$variable.importance %>% 
++     broom::tidy() %>%
++     dplyr::arrange(desc(x)) %>%
++     dplyr::top_n(15) %>%
++     ggplot(aes(reorder(names, x), x)) +
++     geom_col() +
++     coord_flip() +
++     ggtitle("Top 15 important variables") ## Plot graph showing the most important variables ##
+
+# Random Forest Classification pixel by pixel:
+#https://gis.stackexchange.com/questions/39021/how-to-perform-random-forest-land-cover-classification
+
+library(raster)
+library(sp)
+library(rgdal)
+library(randomForest)
+setwd("pathToDirHere")
+rlist=list.files(pattern="tif$", full.names=TRUE) ## gera arquivo tipo List de todos os Tiffs que existem na pasta definida em setwd. Cuidado para escolher apenas os tiffs de interesse. ##
+xvars <- stack(rlist) ## transforma em Stack o arquivo List gerado no passo anterior. Avaliar se transformar em Brick agiliza o processamento ##
+sdata <- readOGR("verShapeDasClasses.shp")
+v <- as.data.frame(extract(xvars, sdata)) ## gera um DataFrame dos valores extraídos do RasterStack xvars indicados pelo shape sdata ##
+sdata@data = data.frame(sdata@data, v[match(rownames(sdata@data), rownames(v)),]) ## gera um DataFrame dos valores do banco de dados do shape e dos valores do DataFrame correspondentes ao shape (obtidos no passo anterior) juntando-se o nome das colunas. Em outras palavras, junta o banco de dados do shape com o DataFrame quer contém os dados de cada classe ## 
+rf.mdl <- randomForest(x=sdata@data[,3:ncol(sdata@data)], y=as.factor(sdata@data[,"Class"]), ntree=501, importance=TRUE) ## “Class” é o nome da coluna do banco de dados do shape que contém a classe de cada feição geográfica ##
+plot(rf.mdl) ## avaliar resultados do modelo obtido ##
+varImpPlot(rf.mdl, type=1) ## avaliar resultados do modelo obtido ##
+predict(xvars, rf.mdl, filename="nomeDoArquivoASerGerado.tif", type="response", index=1, na.rm=TRUE, progress="window", overwrite=TRUE) ## type é a resposta do modelo ao invés, por exemplo, da probabilidade. Index é o número da coluna do arquivo de input que rotulará os pixels da classificação ##
