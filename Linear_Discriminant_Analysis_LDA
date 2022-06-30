@@ -1,0 +1,28 @@
+# PS: The amount of LDAs is one less the number of classes. For instance, if you have three classes, your model will generate two LDA (LDA1 and LDA2). ##
+library(tidyverse)
+library(caret)
+library(MASS)
+trees <- read.csv("C:/Projetos/Vant_Rondonia_Embrapa/Results_Cecropia_Vismia/Heterogeneidade_Copas.csv", header = TRUE, sep = ";") ## Importar arquivos conforme especificações ##
+set.seed(123) ## To make the model reproductible ##
+training.samples <- trees$Classif %>% createDataPartition(p = 0.8, list = FALSE) ## Define the splitting rule of the data into training (80%) and test set (20%) ##
+train.data <- trees[training.samples, ] ## Split the data into training (80%) and test set (20%) ##
+test.data <- trees[-training.samples, ] ## Split the data into training (80%) and test set (20%) ##
+preproc.param <- train.data %>% preProcess(method = c("center", "scale")) ## Estimate preprocessing parameters ##
+train.transformed <- preproc.param %>% predict(train.data) ## Transform (normalize) the data using the estimated parameters ##
+test.transformed <- preproc.param %>% predict(test.data) ## Transform (normalize) the data using the estimated parameters ##
+model <- lda(Classif~., data = train.transformed) ## Fit (create) the LDA model. ##
+predictions <- model %>% predict(test.transformed) ## Make predictions. ##
+mean(predictions$class==test.transformed$Classif) ## Model accuracy. ##
+model # Check the created LDA model. ##
+plot(model, col="gray") ## Check a graph that shows where and how the data is distributed for each class. Separable classes have to show gaussian distribution without overlap between them. ##
+predictions <- model %>% predict(test.transformed) ## The predict() function returns the following elements: class - predicted classes of observations; posterior - is a matrix whose columns are the groups, rows are the individuals and values are the posterior probability that the corresponding observation belongs to the groups; x - contains the linear discriminant values for each classified element. ##
+names(predictions) ## Print the names of the elements of the previous step. ##
+head(predictions$class, 6) ## If you wanna check the predicted classes obtained by predict() function. ##
+head(predictions$posterior, 6) ## If you wanna check the predicted probabilities of class membership obtained by predict() function. ##
+head(predictions$x, 3) ## If you wanna check the linear discriminants values obtained by predict() function. ##
+confusionMatrix(test.transformed$Classif, predictions$class) ## Check confusion matrix ##
+precision <- posPredValue(predictions$class, test.transformed$Classif, positive="good") ## Calculate Precision, where the “positive” parameter is the “Positive class” indicated in the confusion matrix results of the previous step ##
+recall <- sensitivity(predictions$class, test.transformed$Classif, positive="good") ## Calculate Recall, where the “positive” parameter is the “Positive class” indicated in the confusion matrix results of the previous step ##
+F1 <- (2 * precision * recall) / (precision + recall) ## Calculate F1_score ##
+lda.data <- cbind(train.transformed, predict(model)$x) ## Prepare data to plot the LDA results in a graph in the next step. ##
+ggplot(lda.data, aes(LD1, LD1)) + geom_point(aes(color = Classif)) ## Plot the LDA results in a graph. ##
