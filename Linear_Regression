@@ -1,0 +1,32 @@
+# Simple Linear Regression:
+
+# Gerar *.csv considerando primeira linha como título de campo (HEADER). Se for tabela de atributos de shapefile, exportar no QGis como *.csv e, caso necessário, manipular colunas  no excel.
+my_data <- read.csv2("nomeDoArquivo.csv", header = TRUE, sep = ";", dec = ",")
+linearMod <- lm(NDVI_Sentinel ~ TreeCover, my_data) ## Regressão linear para obtenção dos coeficientes de y = ax + b, sendo no exemplo acima a variável y a coluna NDVI_Sentinel e x a coluna TreeCover ##
+print(linearMod) ## Visualizar os valores dos coeficientes obtidos ##
+summary(linearMod) ## Verificar os parâmetros estatísticos referentes à acurácia da Regressão Linear ##
+sigma(linearMod)/mean(my_data$NDVI_Sentinel) ## calculate the Residual Standard Error (RSE), or sigma. The lower the RSE, the more accurate the model ##
+summary(linearMod)$r.squared ## Get R2 ##
+summary(linearMod)$adj.r.squared ## Get Adjusted R2 ##
+pf(summary(linearMod)$fstatistic[1], summary(linearMod)$fstatistic[2], summary(linearMod)$fstatistic[3], lower=FALSE) ## Get p-value ##
+print(pf(summary(linearMod)$fstatistic[1], summary(linearMod)$fstatistic[2], summary(linearMod)$fstatistic[3], lower=FALSE), digits=4) ## If you wish to print p-value with 4 digits only ##
+scatter.smooth(x=my_data$TreeCover, y=my_data$NDVI_Sentinel, main="NDVI according to Tree Cover") ## Gerar gráfico de regressão local LOESS, no caso do exemplo, as variáveis NDVI_Sentinel e TreeCover ##
+library(mgcv) ## Caso queira usar a função “gam” abaixo ##
+summary(gam(NDVI_Sentinel ~ TreeCover, data=my_data)) ## Caso a regressão LOESS do comando loess(my_data$NDVI_Sentinel ~ my_data$TreeCover) gere dados minimamente robustos, checar R^2 da curva LOESS, no caso do exemplo, as variáveis NDVI_Sentinel e TreeCover. ATENÇÃO: quando LOESS não é robusto, seus parâmetros são iguais aos da regressão linear, servindo o LOESS apenas para visualização ##
+plot(my_data$TreeCover, my_data$NDVI_Sentinel, main = "ARD: trees manually delineated", xlab="Tree cover", ylab="NDVI", xlim=c(0, 1), ylim=c(0, 1)) ## Primeiro passo para gerar gráfico da regressão linear entre, no caso do exemplo, as variáveis NDVI_Sentinel no eixo y e TreeCover no eixo x, também inserindo intervalos e nomes aos eixos ##
+abline(lm(NDVI_Sentinel ~ TreeCover, my_data)) ## Segundo passo para gerar gráfico da regressão linear entre, no caso do exemplo, as variáveis NDVI_Sentinel no eixo y e TreeCover no eixo x ##
+legend("topleft", bty="n", legend=c(paste("R2adj = ", format(summary(linearMod)$adj.r.squared, digits=4)), paste("p-value = ", format(pf(summary(linearMod)$fstatistic[1], summary(linearMod)$fstatistic[2], summary(linearMod)$fstatistic[3], lower=FALSE), digits=4)))) ## Add R2adj and p-value legend to the plot, where digits is the total of numbers that will appear after the non-zero decimal value. For instance, the number 0.0523432 is plotted as 0.05 in digits=1 and as 0.0523 in digits=3 ##
+legend("topleft", bty="n", legend=c(paste("R2adj = ", format(summary(linearMod)$adj.r.squared, digits=4)), paste("p-value = ", format(pf(summary(linearMod)$fstatistic[1], summary(linearMod)$fstatistic[2], summary(linearMod)$fstatistic[3], lower=FALSE), digits=4)), paste("RSE = ", formatC(sigma(linearMod)/mean(my_data$NDVI_Sentinel), digits = 4, format = "f")))) ## If you want to plot Residual Standard Error (RSE) ##
+## If you want an alternative layout using the library ggplot2##
+ggplot(my_data,aes(y=NDVI_Sentinel,x=TreeCover))+geom_point(shape=1, size=3)+geom_smooth(method="lm", se = TRUE, color="black")+annotate(geom="text", x=0.25, y=c(3, 2.75, 2.5), label=c(paste("R2adj = ", format(summary(linearMod)$adj.r.squared, digits=4)), paste("p-value = ", format(pf(summary(linearMod)$fstatistic[1], summary(model)$fstatistic[2], summary(linearMod)$fstatistic[3], lower=FALSE), digits=4)), paste("RSE = ", formatC(sigma(linearMod)/mean(my_data$NDVI_Sentinel), digits = 4, format = "f")))) ## It is NECESSARY to adjust x and y values according to the range of the x and y axis. In this example, 0<x<2 and 0<y<3
+fit <- lm(NDVI_Sentinel ~ TreeCover + TreeHeight + TreeDensity, my_data) ## Regressão linear múltipla ##
+par(mfrow=c(2,3)) ## se quiser plotar diversos gráficos num mesmo plot com 2 linhas e 3 colunas ##
+
+
+
+# Multiple Linear Regression:
+
+# Gerar *.csv considerando primeira linha como título de campo (HEADER). Se for tabela de atributos de shapefile, exportar no QGis como *.csv e, caso necessário, manipular colunas  no excel.
+my_data <- read.csv2("nomeDoArquivo.csv", header = TRUE, sep = ";", dec = ",")
+model <- lm(Shannon ~., data = my_data) ## Same as simple, but more independent variables are added
+sigma(model)/mean(d$Shannon) ## calculate the Residual Standard Error (RSE), or sigma. The lower the RSE, the more accurate the model ##
