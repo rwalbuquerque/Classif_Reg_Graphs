@@ -1,0 +1,37 @@
+# Estatística por grupo de dados:
+
+r <- read.csv("D:/Projetos/Vant_Rondonia_Embrapa/Crown_Heterogeneity_Index/Dados_Heterog_Parcelas.csv", header = TRUE, sep = ";", dec = ",") ## Import *.csv file according to its specs, which in this example columns are separated by “;” and decimal values are registered with “,” ##
+head(aggregate(r[3:16], r[1], mean)) ## Check which columns contains: the values you want to calculate (r[3:16] in the example takes columns 3 to 16, but if you want specific columns, c(“Name of column1”, “Name of column 4”) picks columns according to their names on the headers); which column contains the group that must have the statistics calculated (r[1] in the example); and the statistic you want (mean in the example, but quantile, min, max, sum and sd are also possible) ##
+
+
+# Inserir ou retirar coluna ou linha na base de dados:
+
+r <- read.csv("D:/Projetos/Vant_Rondonia_Embrapa/Crown_Heterogeneity_Index/Dados_Heterog_Parcelas.csv", header = TRUE, sep = ";", dec = ",") ## Import *.csv file according to its specs, which in this example columns are separated by “;” and decimal values are registered with “,” ##
+d <- aggregate(r[, 3:16], r[1], sum) ## A descrição do agregate está acima. Pra ganhar tempo, coloquei aqui a separação por dados ##
+d$Shannon <- c(2.3347750, 1.6783420, 1.5115940, 1.8233490, 2.3940880) ## In this example I used c() function to register data, but a variable with values can be imported to R and added as a column instead of using c() function. With this example, a column named “Shannon was added to the “d” variable ##
+d <- subset(d, select = -c(Plot) ) ## Column named “Plot” was dropped from variable “d” ##
+d <- d[-c(5),] ## Remove row number 5 ##
+
+# Transformar em *.txt para ser analisado estatisticamente no R
+
+library(raster)
+library(sp)
+setwd("F:/Rafael_Albuquerque/VANT_ExtremaMG/Satelites/Arquivos_TIFF")
+map <- raster("Sentinel_NDVI_APP_TopoMorroAOI.tif")
+data <- rasterToPoints(map, progress="text")
+write.table(data, "F:/Rafael_Albuquerque/VANT_ExtremaMG/Satelites/Arquivos_TIFF/TESTE_TABELA.txt", sep="\t")
+
+
+
+# Obter bandas individuais:
+
+library(raster)
+library(sp)
+library(rgdal)
+setwd("pathToDirHere")
+r <- raster("Mosaico_RGB.tif", band=1)
+g <- raster("Mosaico_AOI_Dividida1.tif", band=2)
+b <- raster("Mosaico_AOI_Dividida1.tif", band=3)
+msc <- stack(r, g, b) ## Para tirar o fundo preto ou se quiser visualizar o RGB usando a função plotRGB ##
+plotRGB(msc, r=1, g=2, b=3)
+writeRaster(msc, "nomeDoRaster.tif", format="GTiff", overwrite=TRUE) ## Se quiser salvar em arquivo *.tif ##
