@@ -1,0 +1,17 @@
+# Stepwise (OBS: classes precisam ser int ao invés de string ou character):
+
+library(tidyverse)
+library(caret)
+library(leaps)
+library(MASS)
+trees <- read.csv("C:/Projetos/Vant_Rondonia_Embrapa/Results_Cecropia_Vismia/Heterogeneidade_Copas.csv", header = TRUE, sep = ";") ## Importar arquivos conforme especificações ##
+models <- regsubsets(Classif~., data = trees, nvmax = 5, method = "seqrep") ## Definição do modelo: “Classif” é o campo contendo o int da classe a ser estimada no eixo y; data é o arquivo de dados importado; nvmax é o número máximo de variáveis a serem consideradas no modelo preditivo; method seqrep é método sequential replacement, que é uma mistura dos métodos “backward”, “forward”. ##
+train.control <- trainControl(method = "cv", number = 10) ## seleciona o método de controle de acurácia “cross validation” como k-fold, sendo k=10 neste caso. ##
+step.model <- train(Classif ~., data = trees,
++                     method = "leapBackward", 
++                     tuneGrid = data.frame(nvmax = 1:5),
++                     trControl = train.control) ## Realiza o stepwise: “Classif é a coluna contendo os valores da classe de interesse (eixo y); trees é o arquivo de dados importado; method "leapBackward" é o backward selection (leap refere-se ao nome da biblioteca); tuneGrid são os dados a serem modelados (“data”), sendo nvmax o número máximo de variáveis preditivas/independentes do modelo; trControl é o método de medir acurácia definido no passo anterior. ##
+step.model$results ## Visualiza acurácia dos modelos conforme o número de variáveis. O melhor modelo é o que tem menor valor de RMSE. Quanto menor o MAE, melhor o modelo e quanto maior o Rsquared, melhor o modelo. ##
+step.model$bestTune ## Checar qual o número de variáveis que gerou maior acurácia ##
+summary(step.model$finalModel) ## Checar resultados dos modelos, sendo que o “*” indica que a variável foi utilizada no modelo. ##
+coef(step.model$finalModel, 2) ## Checa a equação final do modelo. 2 refere-se ao modelo com duas variáveis. Caso deseje verificar a equação do modelo mais acurado, utilizar o comando “coef(step.model$finalModel, as.integer(step.model$bestTune))”. ##
