@@ -1,0 +1,64 @@
+# Histogram graph:
+ggplot(test,aes(test$Delineation.Accuracy.parameter, test$Identified.trees))+geom_bar(stat="identity", aes(fill=test$Delineation.Accuracy.parameter))+scale_fill_grey(start=0,end =0.8) + theme(legend.position="none") + labs(x = "Target", y = "Identified trees") ## Gera em escala de cinza ##
+library(ggpubr)
+cd <- ggplot(test,aes(test$Delineation.Accuracy.parameter, test$Tree.crowns.correctly.delineated))+geom_bar(stat="identity", aes(fill=test$Delineation.Accuracy.parameter))+scale_fill_grey(start=0,end =0.8) + theme(legend.position="none") + labs(x = "Target", y = "Tree crowns correctly delineated")
+iou <- ggplot(test,aes(test$Delineation.Accuracy.parameter, test$IoU))+geom_bar(stat="identity", aes(fill=test$Delineation.Accuracy.parameter))+scale_fill_grey(start=0,end =0.8) + theme(legend.position="none") + labs(x = "Target", y = "Intersection over Union")
+prc <- ggplot(test,aes(test$Delineation.Accuracy.parameter, test$Precision))+geom_bar(stat="identity", aes(fill=test$Delineation.Accuracy.parameter))+scale_fill_grey(start=0,end =0.8) + theme(legend.position="none") + labs(x = "Target", y = "Precision")
+rec <- ggplot(test,aes(test$Delineation.Accuracy.parameter, test$Recall))+geom_bar(stat="identity", aes(fill=test$Delineation.Accuracy.parameter))+scale_fill_grey(start=0,end =0.8) + theme(legend.position="none") + labs(x = "Target", y = "Recall")
+f1 <- ggplot(test,aes(test$Delineation.Accuracy.parameter, test$F1))+geom_bar(stat="identity", aes(fill=test$Delineation.Accuracy.parameter))+scale_fill_grey(start=0,end =0.8) + theme(legend.position="none") + labs(x = "Target", y = "F1")
+ggarrange(it, cd, iou, prc, rec, f1 + rremove("x.text"), labels = c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)"), ncol = 3, nrow = 2) ## multiple plot with ggplot ##
+
+# Boxplot graph:
+library(ggplot2)
+#Gerar *.csv considerando primeira linha como título de campo (HEADER) e duas colunas apenas, sendo uma coluna contendo o nome da variável que se deseja incluir no boxplot e outra coluna com o valor da variável que será inserido para a estatística. Por exemplo: 
+#     FRSP      Error_Percentage
+#1   TH          -184.50
+#2   TH           -27.00
+#3   GI             5.38
+#4   GI           -10.29
+my_data <- read.csv2("nomeDoArquivo.csv", header = TRUE, sep = ";", dec = ",")
+p <- ggplot(my_data, aes(x=FRSP, y=Error_Percentage)) + geom_boxplot()
+p <- p + scale_x_discrete(name = "Forest Restoration Structural Parameter") + scale_y_continuous(name = "Error Percentage") + theme(text = element_text(size=15)) ## Nomear eixos x e y e definir tamanho da fonte ##
+p <- p + scale_y_continuous(name = "Error Percentage",
+                              breaks = seq(-200, 100, 10),
+                              limits=c(-200, 100)) ## mostrar no eixo y valores, no caso do exemplo, de -200 a 100 rotulando o eixo num intervalo de 10 unidades ##
+p <- p + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), text = element_text(size=15)) ## Remove background, add border to axis and define the font size of the axis ##
+p <- p + ggtitle("Boxplot of mean ozone by month") ## Se quiser colocar título ##
+
+# Divergence graph:
+library(ggplot2)
+#Gerar *.csv considerando primeira linha como título de campo (HEADER), primeira coluna como atributo a ser avaliado quanto à divergência, podendo cada atributo aparecer em mais de uma linha caso tenha mais de um resultado. Por exemplo: 
+#     FRSP      Error_Percentage
+#1   TH          -184.50
+#2   TH           -27.00
+#3   GI             5.38
+#4   GI           -10.29
+my_data <- read.csv2("nomeDoArquivo.csv", header = TRUE, sep = ";", dec = ",")
+ggplot(my_data,aes(x = nomeDoCampoParaPlotarEixoX, y = nomeDoCampoParaPlotarEixoY)) + geom_bar(aes(fill = nomeDocampoASepararPorClassificacao),stat = "identity", position="dodge") + scale_fill_manual("TituloLegenda", values = c("NomeItem1" = "black", "NomeItem2" = "dark gray"))    +     labs(title= "Diverging CV", y= "CV Variation on each Plot")   +     coord_flip()+geom_hline(yintercept=0) + scale_x_continuous(name = "Plot number", breaks = seq(0, 20, 1), limits=c(0, 20)) ## “coord_flip()” inverte eixos x e y pra deitar o gráfico; “geom_hline(yintercept=0)” preenche eixo y pra facilitar visualização; “scale_x_continuous()” define a amplitude dos valores no eixo e o intervalo que tal amplitude rotulará valores no gráfico, sendo que no exemplo os valores vão de 0 a 20 sendo rotulados no eixo a cada 1 ##
+# Para plotar mais de um eixo no mesmo gráfico, deve-se preparar o arquivo *.CSV onde um dos campos contém indicação de qual classe corresponderá ao eixo do gráfico, por exemplo, abaixo o campo Veg_Type indica que cada classe ali descrita corresponderá a um eixo no gráfico
+#NumParcela  Variation Veg_Type Direction
+#1          1  -9.090909       CV      West
+#2          1 -19.030303       CV      East
+#3          2 -20.535714       CV      West
+#4          2 -19.866071       CV      East
+#5          3 -21.698113       GI      West
+#6          3  -2.964960       GI      East
+#Neste exemplo, basta então adicionar o comando “facet_wrap(~Veg_Type)” para que cada classe Veg_Type tenha um eixo de gráfico numa mesma figura. Fica então o código abaixo para o exemplo de dois eixos:
+ggplot(my_data,aes(x = NumParcela, y = Variation)) + geom_bar(aes(fill = Direction),stat = "identity", position="dodge") + facet_wrap(~Veg_Type) + scale_fill_manual("Direction", values = c("West" = "black", "East" = "dark gray"))    +     labs(title= "Diverging CV and GI", y= "CV and GI Variation (%) on each Plot")   +     coord_flip()+geom_hline(yintercept=0) + scale_x_continuous(name = "Plot number", breaks = seq(0, 20, 1), limits=c(0, 20))
+
+
+# Slope graph (comparison of two different situations):
+my_data <- read.csv2("nomeDoArquivo.csv", header = TRUE, sep = ";", dec = ",") ## Importar *.CSV como o exemplo abaixo:
+#FRSP Plot_Photointerpretation Plot_RPA Photointerpretation_RPA
+#1   TD                       14       38                26.38268
+#2   TH                       29       33                 8.00000
+#3   VC                       25       51                30.00000
+#4   GI                     -134      -12                50.00000
+
+my_data$class <- ifelse((my_data$`Plot_RPA` - my_data$`Photointerpretation_RPA`) < 0, "red", "green") ## Criar campo no arquivo “my_data” indicando a cor da curva no gráfico referente à variável ##
+left_label <- paste(my_data$FRSP, round(my_data$`Plot_RPA`),sep=", ") ## variável a ser utilizada para escrever no gráfico a legenda ou texto correspondente à variável e respectivo valor ##
+right_label <- paste(my_data$FRSP, round(my_data$`Photointerpretation_RPA`),sep=", ") ## variável a ser utilizada para escrever no gráfico a legenda ou texto correspondente à variável e respectivo valor ##
+ggplot(my_data) + geom_segment(aes(x=1, xend=2, y=`Plot_RPA`, yend=`Photointerpretation_RPA`, col=class), size=.75, show.legend=F) + 
++     geom_vline(xintercept=1, linetype="dashed", size=.1) + 
++     geom_vline(xintercept=2, linetype="dashed", size=.1) +
++     scale_color_manual(labels = c("Up", "Down"), values = c("green"="#00ba38", "red"="#f8766d")) + labs(x="", y="Error Percentage") + xlim(.5, 2.5) + ylim((1.1*(min(my_data$`Plot_RPA`, my_data$`Photointerpretation_RPA`))),(1.1*(max(my_data$`Plot_RPA`, my_data$`Photointerpretation_RPA`))))+ geom_text(label=left_label, y=my_data$`Plot_RPA`, x=rep(1, NROW(my_data)), hjust=1.1, size=3.5)+ geom_text(label=right_label, y=my_data$`Photointerpretation_RPA`, x=rep(2, NROW(my_data)), hjust=-0.1, size=3.5)+ geom_text(label="Plot Reference Data", x=1, y=1.1*(max(my_data$`Plot_RPA`, my_data$`Photointerpretation_RPA`)), hjust=1.2, size=5)+ geom_text(label="Photointerpretation \n Reference Data", x=2, y=1.1*(max(my_data$`Plot_RPA`, my_data$`Photinterpretation_RPA`)), hjust=-0.1, size=5) + theme(panel.background = element_blank(), panel.grid = element_blank(), axis.line = element_line(colour = "black"), axis.ticks = element_blank(), axis.text.x = element_blank(), panel.border = element_blank(), plot.margin = unit(c(1,2,1,2), "cm"))
