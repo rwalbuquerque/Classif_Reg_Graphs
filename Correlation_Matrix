@@ -1,0 +1,24 @@
+#Análise de correlação:
+library("ggpubr")
+trees <- read.csv("C:/Projetos/Vant_Rondonia_Embrapa/Results_Cecropia_Vismia/Heterogeneidade_Copas_ARCec.csv", header = TRUE, sep = ";") # Importar planilha conforme especificações de cabeçalho e separadores decimais ##
+ggscatter(trees, x = "Area", y = "CHMmax", add = "reg.line", conf.int = TRUE, cor.coef = TRUE, cor.method = "pearson", xlab = "Tree crown area (m²)", ylab = "Tree height (m)") # Plotar gráfico com histograma, reta com valor de correlação e p-value. OBS: p-value menor que 0.05 confirma que o valor da correlação tem significância estatística.
+
+
+
+# Matriz de correlação:
+
+# Gerar *.csv considerando primeira linha como título de campo (HEADER). Se for tabela de atributos de shapefile, exportar no QGis como *.csv e, caso necessário, manipular colunas  no excel.
+my_data <- read.csv2("nomeDoArquivo.csv", header = TRUE, sep = ";", dec = ",")
+res <- cor(my_data) # matriz de correlação
+library(Hmisc) # para correlação p-values
+res2 <- rcorr(as.matrix(my_data)) # para correlação p-values
+library("PerformanceAnalytics") # para gerar gráfico bonito
+chart.Correlation(my_data, histogram=TRUE, pch=19) # para gerar gráfico bonito
+col<- colorRampPalette(c("blue", "white", "red"))(20) # primeiro passo para gerar heatmap da matriz de correlação
+heatmap(x = res, col = col, symm = TRUE) # para gerar heatmap da matriz de correlação
+HEATMAP ALTERNATIVO:
+library(grid)
+library(pheatmap)
+library(gplots)
+col<- colorRampPalette(c("blue", "white", "red"))(20) # primeiro passo para gerar heatmap da matriz de correlação
+heatmap.2(res,col=col,cexRow=1,cexCol=1,margins=c(5,8),trace="none",srtCol=45) # para gerar heatmap alternativo da matriz de correlação
