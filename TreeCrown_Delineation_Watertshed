@@ -1,0 +1,25 @@
+# Para delinear a copa das árvores:
+# https://cran.r-project.org/web/packages/rLiDAR/rLiDAR.pdf
+
+
+library(raster)
+library(sp)
+library(rgdal)
+library(rgeos)
+library(rLiDAR)
+setwd("pathToDirHere")
+chm<-raster("CHM_stand.asc") ## se a resolução espacial for inferior a 50 centímetros, NECESSÁRIO degradar os pixels até atingir pelo menos 50 centímetros ##
+res(chm) <- c(xres(chm), xres(chm)) ## NECESSÁRIO que os pixels tenham dimensões espaciais iguais entre X e Y, pois o processamento de dados de drone gera esses valores em dimensão muito próxima, mas não igual ##
+sCHM<-CHMsmoothing(chm, filter="mean", ws=5)
+loc<-FindTreesCHM(sCHM, fws=5, minht=1)
+maxcrown=10.0
+exclusion=0.3
+canopy<-ForestCAS(chm, loc, maxcrown, exclusion) ## Se X e Y não tiverem mesmas dimensões espaciais, “loc” consistirá numa base de dados que gera erro na função ForestCAS porque as coordenadas não estarão exatamente no centro dos pixels, pixels estes que devem ser quadrados e não quase quadrados. A função ForestCAS só funciona se X e Y do raster tiverem mesma dimensão espacial (pixel quadrado) e se as coordenadas de “loc” estiverem bem no centro dos pixels quadrados ##
+boundaryTrees<-canopy[[1]]
+
+
+# Exportar para shape:
+writeOGR(obj = boundaryTrees, dsn="verCaminhoDaPasta", layer="nomeDoShape", driver="ESRI Shapefile")
+
+# Converter raster para dataframe (ainda a confirmar…):
+d = as.data.frame(x, xy=TRUE, na.rm=TRUE) ## onde x<-raster("CHM_stand.asc")
