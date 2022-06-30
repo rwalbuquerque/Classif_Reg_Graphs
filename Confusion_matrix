@@ -1,0 +1,23 @@
+# Create confusion matrix using point coordinates shapefile:
+# No “Field Calculator” da tabela de atributos no QGis, usar a expressão “raster_value('MPRI_Phantom_maior02', 1, make_point($x, $y))” para extrair os valores do raster na coordenada correspondente. ## “MPRI_Phantom_maior02” é o nome do arquivo raster, sendo que as demais variáveis não precisam mudar no comando ##
+library(raster)
+library(sp)
+library(rgdal)
+library(caret)
+library(e1071)
+library(cvms)
+library(broom)
+library(tibble)
+setwd("pathToDirHere")
+tst <- readOGR("Results_test_ExtractRaster.shp") ## o shape deve ter uma coluna com o código da classe prevista e uma coluna com o código da classe teste ##
+conf_mat <- confusionMatrix(data=as.factor(tst$Preview), reference=as.factor(tst$Test)) ## No shapefile importado tst, as colunas “Preview” e “Test”, que são respectivamente os dados obtidos da previsão da classificação e os dados de teste da classificação, devem ser do tipo “int”, sendo cada número inteiro correspondente a uma classe, por exemplo, vegetação é classe nº 1 e solo_exposto é classe n° 2 ##
+Conf_mat ## For each class, Sensitivity is the same as Producer’s Accuracy and Pos Pred Value is the same as User’s Accuracy
+conf_mat[4] ## Checar Precision, Recall e F1 ##
+# ABAIXO É PRA PLOTAR TAMBÉM PORCENTAGENS NUM LAYOUT
+tst <- readOGR("Results_test_ExtractRaster.shp") ## o shape deve ter uma coluna com o código da classe prevista e uma coluna com o código da classe teste ##
+d_multi <- tibble("test" = tst$Test, "prediction" = tst$Preview) ## No shapefile importado tst, as colunas “Preview” e “Test”, que são respectivamente os dados obtidos da previsão da classificação e os dados de teste da classificação, devem ser do tipo “int”, sendo cada número inteiro correspondente a uma classe, por exemplo, vegetação é classe nº 1 e solo_exposto é classe n° 2 ##
+conf_mat_tibble <- confusion_matrix(targets = d_multi$test, predictions = d_multi$prediction)
+plot_confusion_matrix(conf_mat_tibble$'Confusion Matrix'[[1]], palette = "Blues", add_normalized = FALSE, font_counts = font(size = 15), font_row_percentages = font(size = 7), font_col_percentages = font(size = 7)) + ggplot2::theme(text = element_text(size=30)) ##
+# DICA PARA CHECAR RECALL, PRECISION E F_SCORE DA MATRIZ DE CONFUSÃO, QUE POSSUEM OUTROS NOMES NO FORMATO QUE APARECE SEM ESSA DICA (RECALL = Sensitivity e PRECISION = Pos Pred Value, então calcula-se F1_Score = 2*((precision*recall)/(precision+recall))):
+# Reiniciar a sessão em Session -> Restart R
+conf_mat ## os dados serão plotados de forma que será possível checar recall, precision e F_score de cada classe ##
