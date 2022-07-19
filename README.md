@@ -8,4 +8,4 @@ Automatic measurement of canopy cover, canopy height, grass cover and satistical
 
 Regression analysis to estimate species diversity: https://www.mdpi.com/2072-4292/14/4/830
 
-The results of some scripts are not published anywhere, but they some specific general operations that can be consulted.
+Some scripts of this repository are not published in these papers and anywhere either, but they are some specific operations that can be consulted for image processing and statistical analysis.
