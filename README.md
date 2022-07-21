@@ -1,4 +1,4 @@
-# Scripts_R_classif_reg_Graphs
+# Scripts_classif_reg_Graphs
 
 I used some of these scripts in my academic papers:
 
